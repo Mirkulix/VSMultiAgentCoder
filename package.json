@@ -1,0 +1,262 @@
+{
+  "name": "codeteam-ai-ultra",
+  "displayName": "CodeTeam AI Ultra",
+  "description": "Multi-Agent KI-System für VS Code - Mehrere spezialisierte KI-Agenten arbeiten als Team zusammen",
+  "version": "2.0.0",
+  "publisher": "codeteam",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Machine Learning",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "multi-agent",
+    "code-generation",
+    "code-review",
+    "testing",
+    "openai",
+    "claude",
+    "gemini",
+    "groq",
+    "deepseek"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codeteam.openPanel",
+        "title": "CodeTeam AI: Open Panel",
+        "icon": "$(hubot)"
+      },
+      {
+        "command": "codeteam.openSettings",
+        "title": "CodeTeam AI: Team Settings"
+      },
+      {
+        "command": "codeteam.specify",
+        "title": "CodeTeam AI: Specify Feature"
+      },
+      {
+        "command": "codeteam.plan",
+        "title": "CodeTeam AI: Create Plan"
+      },
+      {
+        "command": "codeteam.implement",
+        "title": "CodeTeam AI: Implement Plan"
+      },
+      {
+        "command": "codeteam.reviewCode",
+        "title": "CodeTeam AI: Review Selected Code"
+      },
+      {
+        "command": "codeteam.generateTests",
+        "title": "CodeTeam AI: Generate Tests"
+      },
+      {
+        "command": "codeteam.generateDocs",
+        "title": "CodeTeam AI: Generate Documentation"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codeteam-sidebar",
+          "title": "CodeTeam AI",
+          "icon": "$(hubot)"
+        }
+      ]
+    },
+    "views": {
+      "codeteam-sidebar": [
+        {
+          "type": "webview",
+          "id": "codeteam.agentPanel",
+          "name": "Agent Team"
+        },
+        {
+          "type": "webview",
+          "id": "codeteam.modelFarm",
+          "name": "🏭 Model Farm"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "CodeTeam AI Ultra",
+      "properties": {
+        "codeteam.workflowMode": {
+          "type": "string",
+          "default": "semi-automatic",
+          "enum": [
+            "assisted",
+            "semi-automatic",
+            "automatic"
+          ],
+          "enumDescriptions": [
+            "Assistiert - Review bei jedem Schritt",
+            "Semi-Automatisch - Review bei Phasen-Wechsel",
+            "Vollautomatisch - Nach Initial-Approval"
+          ],
+          "description": "Workflow-Modus für das Agent-Team"
+        },
+        "codeteam.openaiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenAI API Key"
+        },
+        "codeteam.openaiModel": {
+          "type": "string",
+          "default": "gpt-4o",
+          "enum": [
+            "gpt-4o",
+            "gpt-4-turbo",
+            "gpt-4",
+            "o1-preview"
+          ],
+          "description": "OpenAI Model"
+        },
+        "codeteam.anthropicApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Anthropic API Key"
+        },
+        "codeteam.anthropicModel": {
+          "type": "string",
+          "default": "claude-3-5-sonnet-20241022",
+          "enum": [
+            "claude-3-5-sonnet-20241022",
+            "claude-3-opus-20240229"
+          ],
+          "description": "Anthropic Model"
+        },
+        "codeteam.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Google Gemini API Key"
+        },
+        "codeteam.geminiModel": {
+          "type": "string",
+          "default": "gemini-pro",
+          "enum": [
+            "gemini-pro",
+            "gemini-ultra"
+          ],
+          "description": "Google Gemini Model"
+        },
+        "codeteam.groqApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Groq API Key"
+        },
+        "codeteam.groqModel": {
+          "type": "string",
+          "default": "llama-3.1-70b-versatile",
+          "enum": [
+            "llama-3.1-70b-versatile",
+            "llama-3.1-8b-instant",
+            "mixtral-8x7b-32768"
+          ],
+          "description": "Groq Model"
+        },
+        "codeteam.deepseekApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "DeepSeek API Key"
+        },
+        "codeteam.deepseekModel": {
+          "type": "string",
+          "default": "deepseek-coder",
+          "enum": [
+            "deepseek-coder",
+            "deepseek-chat"
+          ],
+          "description": "DeepSeek Model"
+        },
+        "codeteam.kimiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Kimi (Moonshot) API Key"
+        },
+        "codeteam.kimiModel": {
+          "type": "string",
+          "default": "moonshot-v1-8k",
+          "enum": [
+            "moonshot-v1-8k",
+            "moonshot-v1-32k",
+            "moonshot-v1-128k"
+          ],
+          "description": "Kimi Model"
+        },
+        "codeteam.minimaxApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Minimax API Key"
+        },
+        "codeteam.minimaxGroupId": {
+          "type": "string",
+          "default": "",
+          "description": "Minimax Group ID"
+        },
+        "codeteam.minimaxModel": {
+          "type": "string",
+          "default": "abab6-chat",
+          "description": "Minimax Model"
+        },
+        "codeteam.ollamaEndpoint": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Ollama API Endpoint"
+        },
+        "codeteam.ollamaModel": {
+          "type": "string",
+          "default": "codellama",
+          "description": "Ollama Model Name"
+        }
+      }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codeteam.reviewCode",
+          "group": "codeteam@1",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "codeteam.generateTests",
+          "group": "codeteam@2"
+        },
+        {
+          "command": "codeteam.generateDocs",
+          "group": "codeteam@3"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "openai": "^4.20.0",
+    "@anthropic-ai/sdk": "^0.10.0",
+    "@google/generative-ai": "^0.1.0"
+  }
+}
