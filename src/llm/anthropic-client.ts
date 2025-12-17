@@ -1,6 +1,7 @@
 /**
  * CodeTeam AI Ultra - Anthropic Client
  * LLM Client implementation for Anthropic Claude API
+ * Note: Uses any type for SDK compatibility
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { LLMClient, Message, ChatOptions } from '../types';
@@ -29,6 +30,7 @@ export class AnthropicClient implements LLMClient {
                 content: m.content
             }));
 
+        // Using any type cast for SDK compatibility
         const response = await (this.client as any).messages.create({
             model: this.model,
             max_tokens: options?.maxTokens ?? 4000,
@@ -54,6 +56,7 @@ export class AnthropicClient implements LLMClient {
                 content: m.content
             }));
 
+        // Using any type cast for SDK compatibility
         const stream = await (this.client as any).messages.stream({
             model: this.model,
             max_tokens: options?.maxTokens ?? 4000,

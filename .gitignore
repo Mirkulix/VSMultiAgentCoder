@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Compiled output
+out/
+dist/
+*.vsix
+
+# IDE
+.vscode/
+.vscode-test/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# Temp
+*.tmp
+*.temp

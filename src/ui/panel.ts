@@ -6,19 +6,23 @@ import * as vscode from 'vscode';
 import { Orchestrator } from '../orchestrator/router';
 import { BuildRunner } from '../build/runner';
 import { AgentResponse, AgentType } from '../types';
+import { MultiAgentExecutor, ExecutionProgress } from '../orchestrator/multi-agent-executor';
 
 export class AgentPanelProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
     private orchestrator: Orchestrator;
     private buildRunner: BuildRunner;
+    private multiAgentExecutor?: MultiAgentExecutor;
 
     constructor(
         private readonly extensionUri: vscode.Uri,
         orchestrator: Orchestrator,
-        buildRunner: BuildRunner
+        buildRunner: BuildRunner,
+        multiAgentExecutor?: MultiAgentExecutor
     ) {
         this.orchestrator = orchestrator;
         this.buildRunner = buildRunner;
+        this.multiAgentExecutor = multiAgentExecutor;
     }
 
     resolveWebviewView(
@@ -153,6 +157,15 @@ export class AgentPanelProvider implements vscode.WebviewViewProvider {
             this._view.webview.postMessage({
                 type: 'response',
                 response
+            });
+        }
+    }
+
+    showMultiAgentProgress(progress: ExecutionProgress): void {
+        if (this._view) {
+            this._view.webview.postMessage({
+                type: 'multiAgentProgress',
+                progress
             });
         }
     }

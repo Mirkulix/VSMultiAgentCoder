@@ -5,6 +5,7 @@
 import * as vscode from 'vscode';
 import { BuildSystem, BuildResult, TestResult } from '../types';
 import * as path from 'path';
+import { exec } from 'child_process';
 
 export class BuildRunner {
     private outputChannel: vscode.OutputChannel;
@@ -225,7 +226,6 @@ export class BuildRunner {
             }
 
             const cwd = workspaceFolders[0].uri.fsPath;
-            const { exec } = require('child_process');
 
             exec(command, { cwd, maxBuffer: 10 * 1024 * 1024 }, (error: any, stdout: string, stderr: string) => {
                 this.outputChannel.appendLine(stdout);
