@@ -37,7 +37,8 @@
       },
       {
         "command": "codeteam.openSettings",
-        "title": "CodeTeam AI: Team Settings"
+        "title": "CodeTeam AI: Settings (API Keys & Modelle)",
+        "icon": "$(gear)"
       },
       {
         "command": "codeteam.specify",
@@ -79,11 +80,6 @@
           "type": "webview",
           "id": "codeteam.agentPanel",
           "name": "Agent Team"
-        },
-        {
-          "type": "webview",
-          "id": "codeteam.modelFarm",
-          "name": "🏭 Model Farm"
         }
       ]
     },

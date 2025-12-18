@@ -200,6 +200,161 @@ class ModelFarmManager {
         const provider = this.providers.get(providerId);
         return provider?.models.filter(m => m.enabled) ?? [];
     }
+    // Save API Key to VS Code settings
+    async saveApiKey(providerId, apiKey) {
+        const keyMap = {
+            openai: 'openaiApiKey',
+            anthropic: 'anthropicApiKey',
+            gemini: 'geminiApiKey',
+            groq: 'groqApiKey',
+            deepseek: 'deepseekApiKey',
+            kimi: 'kimiApiKey',
+            minimax: 'minimaxApiKey',
+            ollama: ''
+        };
+        const settingKey = keyMap[providerId];
+        if (!settingKey)
+            return false;
+        try {
+            await vscode.workspace.getConfiguration('codeteam').update(settingKey, apiKey, vscode.ConfigurationTarget.Global);
+            // Reload config
+            this.config = vscode.workspace.getConfiguration('codeteam');
+            // Update provider state
+            const provider = this.providers.get(providerId);
+            if (provider) {
+                provider.apiKey = apiKey;
+                provider.apiKeyConfigured = !!apiKey;
+                provider.enabled = !!apiKey;
+            }
+            return true;
+        }
+        catch (error) {
+            console.error(`Failed to save API key for ${providerId}:`, error);
+            return false;
+        }
+    }
+    // Fetch available models from API dynamically
+    async fetchModelsFromApi(providerId) {
+        const provider = this.providers.get(providerId);
+        if (!provider || !provider.apiKeyConfigured) {
+            return exports.DEFAULT_PROVIDER_MODELS[providerId];
+        }
+        try {
+            switch (providerId) {
+                case 'openai':
+                    return await this.fetchOpenAIModels(provider.apiKey);
+                case 'groq':
+                    return await this.fetchGroqModels(provider.apiKey);
+                case 'ollama':
+                    return await this.fetchOllamaModels(provider.endpoint || 'http://localhost:11434');
+                default:
+                    // For providers without model listing API, use defaults
+                    return exports.DEFAULT_PROVIDER_MODELS[providerId];
+            }
+        }
+        catch (error) {
+            console.error(`Failed to fetch models for ${providerId}:`, error);
+            return exports.DEFAULT_PROVIDER_MODELS[providerId];
+        }
+    }
+    async fetchOpenAIModels(apiKey) {
+        const response = await fetch('https://api.openai.com/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        if (!response.ok) {
+            throw new Error(`OpenAI API error: ${response.status}`);
+        }
+        const data = await response.json();
+        // Filter and sort relevant models
+        const relevantModels = data.data
+            .filter((m) => m.id.startsWith('gpt-') ||
+            m.id.startsWith('o1') ||
+            m.id.startsWith('o3') ||
+            m.id.includes('chatgpt'))
+            .sort((a, b) => b.created - a.created);
+        return relevantModels.map((m) => ({
+            id: m.id,
+            name: this.formatModelName(m.id),
+            enabled: m.id.includes('gpt-4o') || m.id === 'gpt-4-turbo',
+            contextWindow: this.getContextWindow(m.id),
+            description: this.getModelDescription(m.id)
+        }));
+    }
+    async fetchGroqModels(apiKey) {
+        const response = await fetch('https://api.groq.com/openai/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        if (!response.ok) {
+            throw new Error(`Groq API error: ${response.status}`);
+        }
+        const data = await response.json();
+        return data.data.map((m) => ({
+            id: m.id,
+            name: this.formatModelName(m.id),
+            enabled: m.id.includes('llama') || m.id.includes('mixtral'),
+            contextWindow: m.context_window || 32768,
+            description: m.id.includes('vision') ? 'Multimodal' : 'Text'
+        }));
+    }
+    async fetchOllamaModels(endpoint) {
+        const response = await fetch(`${endpoint}/api/tags`);
+        if (!response.ok) {
+            throw new Error(`Ollama API error: ${response.status}`);
+        }
+        const data = await response.json();
+        return data.models.map((m) => ({
+            id: m.name,
+            name: m.name,
+            enabled: true,
+            description: `${(m.size / 1e9).toFixed(1)}GB`
+        }));
+    }
+    formatModelName(id) {
+        return id
+            .replace(/-/g, ' ')
+            .replace(/gpt/i, 'GPT')
+            .replace(/\b\w/g, c => c.toUpperCase());
+    }
+    getContextWindow(modelId) {
+        if (modelId.includes('gpt-4o') || modelId.includes('o1') || modelId.includes('gpt-4-turbo'))
+            return 128000;
+        if (modelId.includes('gpt-4-32k'))
+            return 32768;
+        if (modelId.includes('gpt-4'))
+            return 8192;
+        if (modelId.includes('gpt-3.5-turbo-16k'))
+            return 16385;
+        if (modelId.includes('gpt-3.5'))
+            return 4096;
+        return 8192;
+    }
+    getModelDescription(modelId) {
+        if (modelId.includes('o1') || modelId.includes('o3'))
+            return 'Reasoning-Modell';
+        if (modelId.includes('gpt-4o-mini'))
+            return 'Schnell & günstig';
+        if (modelId.includes('gpt-4o'))
+            return 'Multimodal, schnell';
+        if (modelId.includes('gpt-4-turbo'))
+            return 'Schneller als GPT-4';
+        if (modelId.includes('gpt-4'))
+            return 'Stärkstes Modell';
+        if (modelId.includes('gpt-3.5'))
+            return 'Schnell & günstig';
+        return '';
+    }
+    // Update provider models with fetched ones
+    async refreshProviderModels(providerId) {
+        const models = await this.fetchModelsFromApi(providerId);
+        const provider = this.providers.get(providerId);
+        if (provider && models.length > 0) {
+            provider.models = models;
+            if (!provider.selectedModel || !models.find(m => m.id === provider.selectedModel)) {
+                provider.selectedModel = models[0]?.id || '';
+            }
+            await this.saveProviders();
+        }
+    }
     // Test provider connection
     async testProvider(providerId) {
         const provider = this.providers.get(providerId);

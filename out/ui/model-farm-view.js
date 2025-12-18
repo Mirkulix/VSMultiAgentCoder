@@ -79,6 +79,12 @@ class ModelFarmViewProvider {
                     this.modelFarm.reload();
                     this.updateContent();
                     break;
+                case 'saveApiKey':
+                    await this.saveApiKeyWithFeedback(message.providerId, message.apiKey);
+                    break;
+                case 'fetchModels':
+                    await this.fetchModelsWithProgress(message.providerId);
+                    break;
             }
         });
     }
@@ -91,6 +97,34 @@ class ModelFarmViewProvider {
             type: 'testingResult',
             providerId,
             ...result
+        });
+        this.updateContent();
+    }
+    async saveApiKeyWithFeedback(providerId, apiKey) {
+        if (!this._view)
+            return;
+        this._view.webview.postMessage({ type: 'savingKey', providerId });
+        const success = await this.modelFarm.saveApiKey(providerId, apiKey);
+        if (success && apiKey) {
+            // Automatically fetch models after saving key
+            await this.modelFarm.refreshProviderModels(providerId);
+            vscode.window.showInformationMessage(`✅ API Key für ${providerId} gespeichert! Modelle werden geladen...`);
+        }
+        this._view.webview.postMessage({
+            type: 'keySaved',
+            providerId,
+            success
+        });
+        this.updateContent();
+    }
+    async fetchModelsWithProgress(providerId) {
+        if (!this._view)
+            return;
+        this._view.webview.postMessage({ type: 'fetchingModels', providerId });
+        await this.modelFarm.refreshProviderModels(providerId);
+        this._view.webview.postMessage({
+            type: 'modelsFetched',
+            providerId
         });
         this.updateContent();
     }
@@ -340,6 +374,102 @@ class ModelFarmViewProvider {
             border-color: var(--accent);
         }
 
+        .api-key-section {
+            padding: 10px 12px;
+            border-top: 1px solid var(--border);
+            background: rgba(0,0,0,0.1);
+        }
+
+        .api-key-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .api-key-input-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .api-key-input {
+            flex: 1;
+            padding: 6px 10px;
+            background: var(--vscode-input-background);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .api-key-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .api-key-input.has-key {
+            border-color: var(--success);
+        }
+
+        .save-key-btn {
+            padding: 6px 12px;
+            background: var(--accent);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        .save-key-btn:hover {
+            opacity: 0.9;
+        }
+
+        .save-key-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .save-key-btn.saving {
+            animation: pulse 1s infinite;
+        }
+
+        .key-status {
+            font-size: 10px;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .key-status.configured {
+            color: var(--success);
+        }
+
+        .key-status.not-configured {
+            color: var(--text-secondary);
+        }
+
+        .fetch-models-btn {
+            padding: 4px 8px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-top: 8px;
+        }
+
+        .fetch-models-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
         .expand-icon {
             transition: transform 0.2s;
         }
@@ -426,6 +556,36 @@ class ModelFarmViewProvider {
             card.classList.toggle('expanded');
         }
 
+        function saveApiKey(providerId) {
+            const input = document.getElementById('apikey-' + providerId);
+            const btn = document.getElementById('save-key-' + providerId);
+            const apiKey = input.value.trim();
+
+            if (!apiKey) {
+                input.focus();
+                return;
+            }
+
+            btn.classList.add('saving');
+            btn.disabled = true;
+            btn.textContent = '💾 Speichern...';
+
+            vscode.postMessage({ type: 'saveApiKey', providerId, apiKey });
+        }
+
+        function fetchModels(providerId) {
+            const btn = document.getElementById('fetch-models-' + providerId);
+            btn.disabled = true;
+            btn.textContent = '⏳ Lade...';
+
+            vscode.postMessage({ type: 'fetchModels', providerId });
+        }
+
+        function maskApiKey(key) {
+            if (!key || key.length < 10) return '';
+            return key.substring(0, 7) + '...' + key.substring(key.length - 4);
+        }
+
         window.addEventListener('message', (event) => {
             const message = event.data;
             if (message.type === 'testingResult') {
@@ -436,6 +596,22 @@ class ModelFarmViewProvider {
                 setTimeout(() => {
                     btn.textContent = '🔌 Test';
                 }, 3000);
+            }
+            if (message.type === 'keySaved') {
+                const btn = document.getElementById('save-key-' + message.providerId);
+                btn.classList.remove('saving');
+                btn.disabled = false;
+                btn.textContent = message.success ? '✅ Gespeichert!' : '❌ Fehler';
+                setTimeout(() => {
+                    btn.textContent = '💾 Speichern';
+                }, 2000);
+            }
+            if (message.type === 'modelsFetched') {
+                const btn = document.getElementById('fetch-models-' + message.providerId);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '🔄 Modelle aktualisieren';
+                }
             }
         });
     </script>
@@ -448,12 +624,16 @@ class ModelFarmViewProvider {
         const statusIcon = provider.testStatus === 'success' ? '✅' :
             provider.testStatus === 'failed' ? '❌' :
                 provider.apiKeyConfigured ? '⚪' : '🔑';
+        const maskedKey = provider.apiKey && provider.apiKey.length > 10
+            ? provider.apiKey.substring(0, 7) + '...' + provider.apiKey.substring(provider.apiKey.length - 4)
+            : '';
+        const needsApiKey = provider.id !== 'ollama';
         return `
         <div class="provider-card" id="card-${provider.id}">
             <div class="provider-header" onclick="toggleExpand('${provider.id}')">
                 <label class="provider-toggle" onclick="event.stopPropagation()">
-                    <input type="checkbox" 
-                           ${provider.enabled ? 'checked' : ''} 
+                    <input type="checkbox"
+                           ${provider.enabled ? 'checked' : ''}
                            ${!provider.apiKeyConfigured && provider.id !== 'ollama' ? 'disabled' : ''}
                            onchange="toggleProvider('${provider.id}', this.checked)">
                     <span class="toggle-slider"></span>
@@ -465,15 +645,40 @@ class ModelFarmViewProvider {
                 <span class="status-icon">${statusIcon}</span>
                 ${provider.apiKeyConfigured || provider.id === 'ollama' ? `
                     <button class="test-btn" id="test-${provider.id}" onclick="event.stopPropagation(); testProvider('${provider.id}')">🔌 Test</button>
-                ` : `
-                    <button class="test-btn" onclick="event.stopPropagation(); openSettings('${provider.id}')">🔑 Setup</button>
-                `}
+                ` : ''}
                 <span class="expand-icon">▼</span>
             </div>
+
+            ${needsApiKey ? `
+            <div class="api-key-section" onclick="event.stopPropagation()">
+                <div class="api-key-label">
+                    🔑 API Key
+                    ${provider.apiKeyConfigured ? `<span style="color: var(--success);">(${maskedKey})</span>` : ''}
+                </div>
+                <div class="api-key-input-group">
+                    <input type="password"
+                           class="api-key-input ${provider.apiKeyConfigured ? 'has-key' : ''}"
+                           id="apikey-${provider.id}"
+                           placeholder="${provider.apiKeyConfigured ? 'Neuen Key eingeben...' : 'sk-... oder API Key hier eingeben'}"
+                           onkeypress="if(event.key==='Enter') saveApiKey('${provider.id}')">
+                    <button class="save-key-btn"
+                            id="save-key-${provider.id}"
+                            onclick="saveApiKey('${provider.id}')">
+                        💾 Speichern
+                    </button>
+                </div>
+                <div class="key-status ${statusClass}">
+                    ${provider.apiKeyConfigured
+            ? `✅ Key konfiguriert ${provider.testStatus === 'success' ? '& getestet' : ''}`
+            : '⚠️ Kein API Key - Bitte eingeben'}
+                </div>
+            </div>
+            ` : ''}
+
             <div class="provider-models">
                 ${provider.models.map(model => `
                     <div class="model-item">
-                        <input type="checkbox" 
+                        <input type="checkbox"
                                class="model-checkbox"
                                ${model.enabled ? 'checked' : ''}
                                onchange="toggleModel('${provider.id}', '${model.id}', this.checked)">
@@ -488,6 +693,13 @@ class ModelFarmViewProvider {
                         </button>
                     </div>
                 `).join('')}
+                ${provider.apiKeyConfigured ? `
+                <button class="fetch-models-btn"
+                        id="fetch-models-${provider.id}"
+                        onclick="fetchModels('${provider.id}')">
+                    🔄 Modelle aktualisieren
+                </button>
+                ` : ''}
             </div>
         </div>`;
     }

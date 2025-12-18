@@ -39,6 +39,7 @@ exports.BuildRunner = void 0;
  * Detects and runs build systems
  */
 const vscode = __importStar(require("vscode"));
+const child_process_1 = require("child_process");
 class BuildRunner {
     outputChannel;
     constructor() {
@@ -238,8 +239,7 @@ class BuildRunner {
                 return;
             }
             const cwd = workspaceFolders[0].uri.fsPath;
-            const { exec } = require('child_process');
-            exec(command, { cwd, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
+            (0, child_process_1.exec)(command, { cwd, maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
                 this.outputChannel.appendLine(stdout);
                 if (stderr) {
                     this.outputChannel.appendLine(stderr);

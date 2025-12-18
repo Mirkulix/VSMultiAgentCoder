@@ -12,6 +12,8 @@ export declare class ModelFarmViewProvider implements vscode.WebviewViewProvider
     constructor(extensionUri: vscode.Uri, modelFarm: ModelFarmManager);
     resolveWebviewView(webviewView: vscode.WebviewView, context: vscode.WebviewViewResolveContext, token: vscode.CancellationToken): void;
     private testProviderWithProgress;
+    private saveApiKeyWithFeedback;
+    private fetchModelsWithProgress;
     private updateContent;
     refresh(): void;
     private getHtmlContent;

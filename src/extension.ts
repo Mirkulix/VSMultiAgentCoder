@@ -11,6 +11,7 @@ import { BuildRunner } from './build/runner';
 import { LLMClient, Message } from './types';
 import { ModelFarmManager } from './config/model-farm';
 import { ModelFarmViewProvider } from './ui/model-farm-view';
+import { SettingsPanel } from './ui/settings-panel';
 import { SupervisorAgent } from './agents/supervisor-agent';
 import { MultiAgentExecutor } from './orchestrator/multi-agent-executor';
 
@@ -87,7 +88,8 @@ export async function activate(context: vscode.ExtensionContext) {
         )
     );
 
-    // Register Model Farm View Provider
+    // Model Farm View Provider is deprecated - use SettingsPanel instead
+    // Keeping the provider registered for backwards compatibility
     modelFarmView = new ModelFarmViewProvider(
         context.extensionUri,
         modelFarmManager
@@ -109,7 +111,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('codeteam.openSettings', () => {
-            vscode.commands.executeCommand('workbench.action.openSettings', 'codeteam');
+            SettingsPanel.createOrShow(context.extensionUri);
         })
     );
 

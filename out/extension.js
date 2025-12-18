@@ -37,6 +37,7 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 /**
  * CodeTeam AI Ultra - VS Code Extension Entry Point
+ * Enhanced Multi-Agent Coder System
  */
 const vscode = __importStar(require("vscode"));
 const router_1 = require("./orchestrator/router");
@@ -46,11 +47,16 @@ const panel_1 = require("./ui/panel");
 const runner_1 = require("./build/runner");
 const model_farm_1 = require("./config/model-farm");
 const model_farm_view_1 = require("./ui/model-farm-view");
+const settings_panel_1 = require("./ui/settings-panel");
+const supervisor_agent_1 = require("./agents/supervisor-agent");
+const multi_agent_executor_1 = require("./orchestrator/multi-agent-executor");
 let orchestrator;
 let memory;
 let panelProvider;
 let modelFarmManager;
 let modelFarmView;
+let supervisor;
+let multiAgentExecutor;
 // Dummy LLM Client when no API key is configured
 class DummyLLMClient {
     async chat(messages) {
@@ -83,12 +89,16 @@ async function activate(context) {
     }
     memory = new memory_1.ProjectMemory(context);
     orchestrator = new router_1.Orchestrator(llmClient, memory);
+    // Initialize Multi-Agent System
+    supervisor = new supervisor_agent_1.SupervisorAgent(llmClient, memory);
+    multiAgentExecutor = new multi_agent_executor_1.MultiAgentExecutor(orchestrator, supervisor);
     // Initialize Build Runner
     const buildRunner = new runner_1.BuildRunner();
     // Register Agent Panel Provider
-    panelProvider = new panel_1.AgentPanelProvider(context.extensionUri, orchestrator, buildRunner);
+    panelProvider = new panel_1.AgentPanelProvider(context.extensionUri, orchestrator, buildRunner, multiAgentExecutor);
     context.subscriptions.push(vscode.window.registerWebviewViewProvider('codeteam.agentPanel', panelProvider));
-    // Register Model Farm View Provider
+    // Model Farm View Provider is deprecated - use SettingsPanel instead
+    // Keeping the provider registered for backwards compatibility
     modelFarmView = new model_farm_view_1.ModelFarmViewProvider(context.extensionUri, modelFarmManager);
     context.subscriptions.push(vscode.window.registerWebviewViewProvider('codeteam.modelFarm', modelFarmView));
     // Register Commands
@@ -96,7 +106,7 @@ async function activate(context) {
         vscode.commands.executeCommand('codeteam.agentPanel.focus');
     }));
     context.subscriptions.push(vscode.commands.registerCommand('codeteam.openSettings', () => {
-        vscode.commands.executeCommand('workbench.action.openSettings', 'codeteam');
+        settings_panel_1.SettingsPanel.createOrShow(context.extensionUri);
     }));
     context.subscriptions.push(vscode.commands.registerCommand('codeteam.askCoder', async () => {
         const input = await vscode.window.showInputBox({
@@ -147,6 +157,82 @@ async function activate(context) {
         if (input) {
             await executeAgentTask('architect', input);
         }
+    }));
+    // NEW MULTI-AGENT COMMANDS
+    context.subscriptions.push(vscode.commands.registerCommand('codeteam.specify', async () => {
+        const input = await vscode.window.showInputBox({
+            prompt: 'Describe the feature you want to specify',
+            placeHolder: 'e.g., User authentication with JWT...',
+            ignoreFocusOut: true
+        });
+        if (!input)
+            return;
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'CodeTeam AI - Specification Phase',
+            cancellable: false
+        }, async () => {
+            const context = getEditorContext();
+            const response = await orchestrator.routeToAgent('productManager', `Create detailed specifications for: ${input}`, context);
+            panelProvider.showResponse(response);
+            if (response.success) {
+                vscode.window.showInformationMessage('✅ Specification created! Ready to plan?', 'Create Plan').then(selection => {
+                    if (selection === 'Create Plan') {
+                        vscode.commands.executeCommand('codeteam.plan');
+                    }
+                });
+            }
+        });
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('codeteam.plan', async () => {
+        const input = await vscode.window.showInputBox({
+            prompt: 'What do you want to build?',
+            placeHolder: 'e.g., REST API for user management...',
+            ignoreFocusOut: true
+        });
+        if (!input)
+            return;
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'CodeTeam AI - Creating Execution Plan',
+            cancellable: false
+        }, async (progress) => {
+            progress.report({ message: 'Supervisor analyzing task...' });
+            const context = getEditorContext();
+            const plan = await supervisor.createExecutionPlan(input, context);
+            // Show plan to user
+            const planSummary = `
+# Execution Plan
+
+**Total Tasks:** ${plan.tasks.length}
+**Phases:** ${plan.parallelGroups.length}
+**Estimated Time:** ${Math.ceil(plan.estimatedTime / 60)} minutes
+
+## Tasks:
+${plan.tasks.map((t, i) => `${i + 1}. [${t.agentType}] ${t.task}`).join('\n')}
+                `.trim();
+            panelProvider.showResponse({
+                agentType: 'orchestrator',
+                content: planSummary,
+                success: true
+            });
+            // Ask if user wants to implement
+            const choice = await vscode.window.showInformationMessage(`Plan created with ${plan.tasks.length} tasks. Start implementation?`, 'Implement Now', 'Cancel');
+            if (choice === 'Implement Now') {
+                vscode.commands.executeCommand('codeteam.implement');
+            }
+        });
+    }));
+    context.subscriptions.push(vscode.commands.registerCommand('codeteam.implement', async () => {
+        const input = await vscode.window.showInputBox({
+            prompt: 'What feature should the team implement?',
+            placeHolder: 'e.g., User authentication system...',
+            ignoreFocusOut: true
+        });
+        if (!input)
+            return;
+        // Execute multi-agent workflow
+        await executeMultiAgentWorkflow(input);
     }));
     // Watch for configuration changes
     context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(e => {
@@ -201,6 +287,67 @@ async function executeAgentTask(agentType, input) {
     }
     catch (error) {
         vscode.window.showErrorMessage(`Error: ${error}`);
+    }
+}
+async function executeMultiAgentWorkflow(userRequest) {
+    const outputChannel = vscode.window.createOutputChannel('CodeTeam AI - Multi-Agent');
+    outputChannel.show();
+    try {
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'CodeTeam AI - Multi-Agent Execution',
+            cancellable: false
+        }, async (progress) => {
+            progress.report({ message: 'Initializing multi-agent system...' });
+            // Setup progress callback
+            multiAgentExecutor.onProgress((execProgress) => {
+                const percent = (execProgress.currentPhase / execProgress.totalPhases) * 100;
+                progress.report({
+                    message: `Phase ${execProgress.currentPhase}/${execProgress.totalPhases} - ${execProgress.currentTasks.length} agent(s) working`,
+                    increment: percent / execProgress.totalPhases
+                });
+                // Log to output channel
+                execProgress.logs.slice(-1).forEach(log => {
+                    const emoji = log.level === 'success' ? '✅' :
+                        log.level === 'error' ? '❌' :
+                            log.level === 'warning' ? '⚠️' : 'ℹ️';
+                    const agentStr = log.agent ? `[${log.agent}]` : '';
+                    outputChannel.appendLine(`${emoji} ${agentStr} ${log.message}`);
+                });
+                // Show in panel
+                panelProvider.showMultiAgentProgress(execProgress);
+            });
+            const context = getEditorContext();
+            const result = await multiAgentExecutor.execute(userRequest, context);
+            // Show final result
+            outputChannel.appendLine('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            outputChannel.appendLine('FINAL RESULT');
+            outputChannel.appendLine('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+            outputChannel.appendLine(result.finalOutput);
+            panelProvider.showResponse({
+                agentType: 'orchestrator',
+                content: result.finalOutput,
+                success: result.success
+            });
+            if (result.success) {
+                vscode.window.showInformationMessage(`✅ Multi-Agent workflow completed! ${result.tasks.length} tasks in ${(result.duration / 1000).toFixed(1)}s`, 'View Output').then(selection => {
+                    if (selection === 'View Output') {
+                        outputChannel.show();
+                    }
+                });
+            }
+            else {
+                vscode.window.showWarningMessage(`⚠️ Workflow completed with some failures. Check output for details.`, 'View Output').then(selection => {
+                    if (selection === 'View Output') {
+                        outputChannel.show();
+                    }
+                });
+            }
+        });
+    }
+    catch (error) {
+        outputChannel.appendLine(`\n❌ FATAL ERROR: ${error}`);
+        vscode.window.showErrorMessage(`Multi-Agent execution failed: ${error}`);
     }
 }
 function getEditorContext() {

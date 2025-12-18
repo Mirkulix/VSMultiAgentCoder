@@ -41,6 +41,15 @@ export declare class ModelFarmManager {
     setModelEnabled(providerId: LLMProvider, modelId: string, enabled: boolean): Promise<void>;
     selectModel(providerId: LLMProvider, modelId: string): Promise<void>;
     getEnabledModels(providerId: LLMProvider): ModelConfig[];
+    saveApiKey(providerId: LLMProvider, apiKey: string): Promise<boolean>;
+    fetchModelsFromApi(providerId: LLMProvider): Promise<ModelConfig[]>;
+    private fetchOpenAIModels;
+    private fetchGroqModels;
+    private fetchOllamaModels;
+    private formatModelName;
+    private getContextWindow;
+    private getModelDescription;
+    refreshProviderModels(providerId: LLMProvider): Promise<void>;
     testProvider(providerId: LLMProvider): Promise<{
         success: boolean;
         message: string;
