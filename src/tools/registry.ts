@@ -3,6 +3,8 @@ import { readFileTool, writeFileTool, listFilesTool } from './file-system';
 import { searchFilesTool } from './search';
 import { runCommandTool } from './terminal';
 import { getDiagnosticsTool } from './diagnostics';
+import { getDefinitionTool, findReferencesTool, getSymbolsTool } from './navigation';
+import { editFileTool } from './editor';
 
 export class ToolRegistry {
     private tools: Map<string, Tool> = new Map();
@@ -18,6 +20,10 @@ export class ToolRegistry {
         this.registerTool(searchFilesTool);
         this.registerTool(runCommandTool);
         this.registerTool(getDiagnosticsTool);
+        this.registerTool(getDefinitionTool);
+        this.registerTool(findReferencesTool);
+        this.registerTool(getSymbolsTool);
+        this.registerTool(editFileTool);
     }
 
     registerTool(tool: Tool) {
