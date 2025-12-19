@@ -4,5 +4,5 @@
  */
 declare let passed: number;
 declare let failed: number;
-declare function test(name: string, fn: () => boolean): void;
+declare function runTest(name: string, fn: () => boolean): void;
 //# sourceMappingURL=integration.test.d.ts.map

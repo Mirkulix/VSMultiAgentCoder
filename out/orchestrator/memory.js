@@ -53,6 +53,8 @@ class ProjectMemory {
     // Conversation History
     // ==========================================
     addMessage(message) {
+        // Simple deduplication based on content and timestamp if needed,
+        // but for now just pushing.
         this.conversationHistory.push(message);
         // Keep only last 50 messages to prevent memory bloat
         if (this.conversationHistory.length > 50) {

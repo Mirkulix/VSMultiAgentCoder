@@ -7,7 +7,7 @@
 console.log('🔧 Integration Tests\n');
 let passed = 0;
 let failed = 0;
-function test(name, fn) {
+function runTest(name, fn) {
     try {
         if (fn()) {
             console.log(`✅ ${name}`);
@@ -24,98 +24,98 @@ function test(name, fn) {
     }
 }
 // Test: All LLM client files exist (check exports compile)
-test('OpenAI Client exports properly', () => {
+runTest('OpenAI Client exports properly', () => {
     const { OpenAIClient } = require('../llm/openai-client');
     return typeof OpenAIClient === 'function';
 });
-test('Anthropic Client exports properly', () => {
+runTest('Anthropic Client exports properly', () => {
     const { AnthropicClient } = require('../llm/anthropic-client');
     return typeof AnthropicClient === 'function';
 });
-test('Gemini Client exports properly', () => {
+runTest('Gemini Client exports properly', () => {
     const { GeminiClient } = require('../llm/gemini-client');
     return typeof GeminiClient === 'function';
 });
-test('Groq Client exports properly', () => {
+runTest('Groq Client exports properly', () => {
     const { GroqClient } = require('../llm/groq-client');
     return typeof GroqClient === 'function';
 });
-test('DeepSeek Client exports properly', () => {
+runTest('DeepSeek Client exports properly', () => {
     const { DeepSeekClient } = require('../llm/deepseek-client');
     return typeof DeepSeekClient === 'function';
 });
-test('Kimi Client exports properly', () => {
+runTest('Kimi Client exports properly', () => {
     const { KimiClient } = require('../llm/kimi-client');
     return typeof KimiClient === 'function';
 });
-test('Minimax Client exports properly', () => {
+runTest('Minimax Client exports properly', () => {
     const { MinimaxClient } = require('../llm/minimax-client');
     return typeof MinimaxClient === 'function';
 });
-test('Ollama Client exports properly', () => {
+runTest('Ollama Client exports properly', () => {
     const { OllamaClient } = require('../llm/ollama-client');
     return typeof OllamaClient === 'function';
 });
-test('LLM Factory exports properly', () => {
+runTest('LLM Factory exports properly', () => {
     const { LLMClientFactory } = require('../llm/factory');
     return typeof LLMClientFactory === 'function' &&
         typeof LLMClientFactory.getAvailableProviders === 'function';
 });
 // Test: All Agent files export properly
-test('CoderAgent exports properly', () => {
+runTest('CoderAgent exports properly', () => {
     const { CoderAgent } = require('../agents/coder-agent');
     return typeof CoderAgent === 'function';
 });
-test('ReviewerAgent exports properly', () => {
+runTest('ReviewerAgent exports properly', () => {
     const { ReviewerAgent } = require('../agents/reviewer-agent');
     return typeof ReviewerAgent === 'function';
 });
-test('TesterAgent exports properly', () => {
+runTest('TesterAgent exports properly', () => {
     const { TesterAgent } = require('../agents/tester-agent');
     return typeof TesterAgent === 'function';
 });
-test('DocsAgent exports properly', () => {
+runTest('DocsAgent exports properly', () => {
     const { DocsAgent } = require('../agents/docs-agent');
     return typeof DocsAgent === 'function';
 });
-test('ArchitectAgent exports properly', () => {
+runTest('ArchitectAgent exports properly', () => {
     const { ArchitectAgent } = require('../agents/architect-agent');
     return typeof ArchitectAgent === 'function';
 });
-test('ProductManagerAgent exports properly', () => {
+runTest('ProductManagerAgent exports properly', () => {
     const { ProductManagerAgent } = require('../agents/product-manager-agent');
     return typeof ProductManagerAgent === 'function';
 });
-test('UXDesignerAgent exports properly', () => {
+runTest('UXDesignerAgent exports properly', () => {
     const { UXDesignerAgent } = require('../agents/ux-designer-agent');
     return typeof UXDesignerAgent === 'function';
 });
-test('SecurityAgent exports properly', () => {
+runTest('SecurityAgent exports properly', () => {
     const { SecurityAgent } = require('../agents/security-agent');
     return typeof SecurityAgent === 'function';
 });
-test('DevOpsAgent exports properly', () => {
+runTest('DevOpsAgent exports properly', () => {
     const { DevOpsAgent } = require('../agents/devops-agent');
     return typeof DevOpsAgent === 'function';
 });
 // Test: Orchestrator exports
-test('Orchestrator exports properly', () => {
+runTest('Orchestrator exports properly', () => {
     const { Orchestrator } = require('../orchestrator/router');
     return typeof Orchestrator === 'function';
 });
-test('ProjectMemory exports properly', () => {
+runTest('ProjectMemory exports properly', () => {
     const { ProjectMemory } = require('../orchestrator/memory');
     return typeof ProjectMemory === 'function';
 });
 // Test: Config exports
-test('TeamConfigManager exports properly', () => {
+runTest('TeamConfigManager exports properly', () => {
     const { TeamConfigManager, DEFAULT_TEAM_CONFIG } = require('../config/team-config');
     return typeof TeamConfigManager === 'function' &&
         Array.isArray(DEFAULT_TEAM_CONFIG) &&
         DEFAULT_TEAM_CONFIG.length === 9;
 });
 // Test: Build Runner exports
-test('BuildRunner exports properly', () => {
+runTest('BuildRunner exports properly', () => {
     const { BuildRunner } = require('../build/runner');
     return typeof BuildRunner === 'function';
 });

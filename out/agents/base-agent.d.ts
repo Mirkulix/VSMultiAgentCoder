@@ -2,12 +2,14 @@
  * CodeTeam AI - Base Agent
  * Abstract base class for all specialized agents
  */
-import { Task, AgentResponse, AgentType, Message, CodeBlock, LLMClient } from '../types';
+import { Task, AgentResponse, AgentType, Message, CodeBlock, LLMClient, ToolCall } from '../types';
 import { ProjectMemory } from '../orchestrator/memory';
+import { ToolRegistry } from '../tools/registry';
 export declare abstract class BaseAgent {
     protected llmClient: LLMClient;
     protected memory: ProjectMemory;
     protected agentType: AgentType;
+    protected toolRegistry: ToolRegistry;
     constructor(llmClient: LLMClient, memory: ProjectMemory, agentType: AgentType);
     /**
      * Get the system prompt for this agent
@@ -18,7 +20,7 @@ export declare abstract class BaseAgent {
      */
     abstract canHandle(task: Task): boolean;
     /**
-     * Execute a task
+     * Execute a task with tool support (ReAct loop)
      */
     execute(task: Task): Promise<AgentResponse>;
     /**
@@ -37,6 +39,10 @@ export declare abstract class BaseAgent {
      * Extract code blocks from response
      */
     protected extractCodeBlocks(response: string): CodeBlock[];
+    /**
+     * Extract tool calls from response
+     */
+    protected extractToolCalls(response: string): ToolCall[];
     /**
      * Extract suggestions/recommendations from response
      */

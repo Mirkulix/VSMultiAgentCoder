@@ -133,4 +133,21 @@ export interface QualityIssue {
     line?: number;
     suggestion?: string;
 }
+export interface Tool {
+    name: string;
+    description: string;
+    parameters: Record<string, any>;
+    execute: (args: any) => Promise<any>;
+}
+export interface ToolCall {
+    id: string;
+    name: string;
+    arguments: Record<string, any>;
+}
+export interface ToolResult {
+    toolCallId: string;
+    name: string;
+    result: any;
+    isError?: boolean;
+}
 //# sourceMappingURL=types.d.ts.map
