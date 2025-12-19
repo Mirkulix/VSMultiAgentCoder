@@ -2,6 +2,7 @@ import { Tool } from '../types';
 import { readFileTool, writeFileTool, listFilesTool } from './file-system';
 import { searchFilesTool } from './search';
 import { runCommandTool } from './terminal';
+import { getDiagnosticsTool } from './diagnostics';
 
 export class ToolRegistry {
     private tools: Map<string, Tool> = new Map();
@@ -16,6 +17,7 @@ export class ToolRegistry {
         this.registerTool(listFilesTool);
         this.registerTool(searchFilesTool);
         this.registerTool(runCommandTool);
+        this.registerTool(getDiagnosticsTool);
     }
 
     registerTool(tool: Tool) {
