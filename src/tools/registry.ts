@@ -8,13 +8,20 @@ import { getDefinitionTool, findReferencesTool, getSymbolsTool } from './navigat
 import { editFileTool } from './editor';
 import { readWebsiteTool } from './browser';
 import { semanticSearchTool } from './semantic-search';
+import { ReviewManager } from '../ui/review-manager';
+import { DiffContentProvider } from '../ui/diff-provider';
 
 export class ToolRegistry {
     private tools: Map<string, Tool> = new Map();
     private sensitiveTools = new Set(['write_file', 'edit_file', 'run_command']);
+    private reviewManager?: ReviewManager;
 
     constructor() {
         this.registerDefaultTools();
+    }
+
+    setReviewManager(manager: ReviewManager) {
+        this.reviewManager = manager;
     }
 
     private registerDefaultTools() {
@@ -78,7 +85,23 @@ export class ToolRegistry {
             return true;
         }
 
-        // For assisted/semi-automatic, ask user
+        // Interactive Review Mode for File Changes
+        if (this.reviewManager && (name === 'write_file' || name === 'edit_file')) {
+            // Reconstruct content to review
+            let content = '';
+            let path = '';
+
+            if (name === 'write_file') {
+                content = args.content;
+                path = args.path;
+                return await this.reviewManager.requestReview(path, content);
+            } else if (name === 'edit_file') {
+                // Not supported in visual review yet, fallback to standard dialog
+                // TODO: Implement in-memory patching for edit_file visual review
+            }
+        }
+
+        // Standard Approval for other tools (or fallback)
         // We trim the args display to avoid massive dialogs
         const argsStr = JSON.stringify(args).slice(0, 200) + (JSON.stringify(args).length > 200 ? '...' : '');
 

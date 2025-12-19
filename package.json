@@ -63,6 +63,16 @@
       {
         "command": "codeteam.generateDocs",
         "title": "CodeTeam AI: Generate Documentation"
+      },
+      {
+        "command": "codeteam.acceptChange",
+        "title": "CodeTeam AI: Accept Proposed Changes",
+        "icon": "$(check)"
+      },
+      {
+        "command": "codeteam.rejectChange",
+        "title": "CodeTeam AI: Reject Proposed Changes",
+        "icon": "$(close)"
       }
     ],
     "viewsContainers": {

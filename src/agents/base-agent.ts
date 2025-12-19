@@ -13,6 +13,7 @@ import {
 } from '../types';
 import { ProjectMemory } from '../orchestrator/memory';
 import { ToolRegistry } from '../tools/registry';
+import { ReviewManager } from '../ui/review-manager';
 
 export abstract class BaseAgent {
     protected llmClient: LLMClient;
@@ -25,6 +26,10 @@ export abstract class BaseAgent {
         this.memory = memory;
         this.agentType = agentType;
         this.toolRegistry = new ToolRegistry();
+    }
+
+    setReviewManager(manager: ReviewManager) {
+        this.toolRegistry.setReviewManager(manager);
     }
 
     /**

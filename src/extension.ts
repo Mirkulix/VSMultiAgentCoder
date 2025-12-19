@@ -14,6 +14,8 @@ import { ModelFarmViewProvider } from './ui/model-farm-view';
 import { SettingsPanel } from './ui/settings-panel';
 import { SupervisorAgent } from './agents/supervisor-agent';
 import { MultiAgentExecutor } from './orchestrator/multi-agent-executor';
+import { DiffContentProvider } from './ui/diff-provider';
+import { ReviewManager } from './ui/review-manager';
 
 let orchestrator: Orchestrator;
 let memory: ProjectMemory;
@@ -65,6 +67,29 @@ export async function activate(context: vscode.ExtensionContext) {
 
     memory = new ProjectMemory(context);
     orchestrator = new Orchestrator(llmClient, memory);
+
+    // Initialize UI Components
+    const diffProvider = new DiffContentProvider();
+    context.subscriptions.push(
+        vscode.workspace.registerTextDocumentContentProvider(DiffContentProvider.scheme, diffProvider)
+    );
+
+    const reviewManager = new ReviewManager(context, diffProvider);
+
+    // Inject ReviewManager into ToolRegistry
+    // We need to access the registry from the orchestrator agents
+    // Ideally Orchestrator should expose it or pass it down.
+    // For now, let's assume Orchestrator's agents are created inside it.
+    // We need to pass reviewManager to Orchestrator to pass to agents?
+    // Or better, let Orchestrator manage the ToolRegistry singleton?
+    // Current Architecture: Each Agent creates its own ToolRegistry. This is suboptimal for stateful managers.
+    // Fix: We need to inject the ReviewManager into the agents or use a singleton Registry.
+    // HACK: For this patch, we will assume Orchestrator agents use a shared registry or we inject it.
+    // But BaseAgent creates `new ToolRegistry()`.
+    // We need to modify BaseAgent to accept an optional registry or setter.
+    // Let's modify Orchestrator to accept ReviewManager and pass it to agents.
+
+    orchestrator.setReviewManager(reviewManager);
 
     // Initialize Multi-Agent System
     supervisor = new SupervisorAgent(llmClient, memory);
