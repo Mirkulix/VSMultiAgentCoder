@@ -170,17 +170,18 @@ export class MultiAgentExecutor {
     }
 
     /**
-     * Execute a single task
+     * Execute a single task with Auto-Fix Loop
      */
     private async executeTask(
         task: AgentTask,
         context: TaskContext | undefined,
-        addLog: (level: ExecutionLog['level'], message: string, agent?: AgentType) => void
+        addLog: (level: ExecutionLog['level'], message: string, agent?: AgentType) => void,
+        retryCount = 0
     ): Promise<AgentResponse> {
         task.status = 'running';
         task.startTime = Date.now();
 
-        addLog('info', `Starting: ${task.task.slice(0, 80)}...`, task.agentType);
+        addLog('info', `Starting: ${task.task.slice(0, 80)}... (Attempt ${retryCount + 1})`, task.agentType);
 
         try {
             // Route to appropriate agent
@@ -191,6 +192,29 @@ export class MultiAgentExecutor {
             );
 
             if (!response.success) {
+                // Check if we should auto-fix
+                if (retryCount < 2) { // Limit retries
+                    addLog('warning', `Task failed. Initiating Auto-Fix attempt ${retryCount + 1}...`, task.agentType);
+
+                    // Create a fix task
+                    const fixRequest = `Fix the following error encountered during task "${task.task}":\n\nError: ${response.content}`;
+
+                    // Let the Developer Agent try to fix it
+                    const fixResponse = await this.orchestrator.routeToAgent(
+                        'developer',
+                        fixRequest,
+                        context
+                    );
+
+                    if (fixResponse.success) {
+                        addLog('success', `Auto-Fix applied successfully. Retrying original task...`, 'developer');
+                        // Recursive retry
+                        return this.executeTask(task, context, addLog, retryCount + 1);
+                    } else {
+                        addLog('error', `Auto-Fix failed: ${fixResponse.content}`, 'developer');
+                    }
+                }
+
                 throw new Error(response.content);
             }
 

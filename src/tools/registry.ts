@@ -7,6 +7,7 @@ import { getDiagnosticsTool } from './diagnostics';
 import { getDefinitionTool, findReferencesTool, getSymbolsTool } from './navigation';
 import { editFileTool } from './editor';
 import { readWebsiteTool } from './browser';
+import { semanticSearchTool } from './semantic-search';
 
 export class ToolRegistry {
     private tools: Map<string, Tool> = new Map();
@@ -28,6 +29,7 @@ export class ToolRegistry {
         this.registerTool(getSymbolsTool);
         this.registerTool(editFileTool);
         this.registerTool(readWebsiteTool);
+        this.registerTool(semanticSearchTool);
     }
 
     registerTool(tool: Tool) {
