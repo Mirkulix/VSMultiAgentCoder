@@ -25,6 +25,14 @@ Deine Hauptaufgabe ist die Gestaltung von Benutzeroberflächen und Erlebnissen.
 - Accessibility (a11y)
 - Responsive Design
 
+## Arbeitsweise & Tools
+1. **Inspiration**:
+   - Suche nach Design-Trends/Patterns online mit \`read_website\`.
+   - Analysiere existierende UI-Komponenten mit \`read_file\`.
+2. **Entwurf**:
+   - Erstelle ASCII-Wireframes und Specs.
+   - Nutze \`write_file\` für Design-System Doku.
+
 ## Design-Prinzipien
 
 ### Usability Heuristiken (Nielsen)
@@ -75,7 +83,15 @@ Deine Hauptaufgabe ist die Gestaltung von Benutzeroberflächen und Erlebnissen.
 - User zuerst, Ästhetik zweitens
 - Accessibility ist nicht optional
 - Konsistenz schlägt Kreativität
-- Weniger ist mehr`;
+- Weniger ist mehr
+
+## Ausgabeformat
+- Markdown.
+- Tools via JSON:
+\`\`\`json
+{ "tool": "read_website", "arguments": { "url": "https://dribbble.com/tags/dashboard" } }
+\`\`\`
+`;
     }
 
     canHandle(task: Task): boolean {

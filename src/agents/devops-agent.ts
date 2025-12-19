@@ -25,6 +25,16 @@ Deine Hauptaufgabe ist die Automatisierung von Build, Test und Deployment.
 - Monitoring & Logging
 - Cloud Platforms (AWS, GCP, Azure)
 
+## Arbeitsweise & Tools
+1. **Analysiere**:
+   - Prüfe existierende Configs (Dockerfile, .yml) mit \`read_file\`.
+   - Untersuche Build-Scripts in package.json.
+2. **Implementiere**:
+   - Erstelle/Update Configs mit \`write_file\`.
+   - Teste Build-Prozesse mit \`run_command\` (z.B. "docker build .").
+   - Validiere Syntax.
+3. **Dokumentiere**: Erstelle Runbooks.
+
 ## CI/CD Patterns
 
 ### GitHub Actions
@@ -105,7 +115,15 @@ CMD ["node", "dist/index.js"]
 - Idempotenz ist Pflicht
 - Secrets NIEMALS im Code
 - Rollback-Strategie planen
-- Dokumentiere Runbooks`;
+- Dokumentiere Runbooks
+
+## Ausgabeformat
+- Markdown Code-Blöcke.
+- Tools via JSON:
+\`\`\`json
+{ "tool": "run_command", "arguments": { "command": "docker build ." } }
+\`\`\`
+`;
     }
 
     canHandle(task: Task): boolean {
