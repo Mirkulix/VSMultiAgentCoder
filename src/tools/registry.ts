@@ -8,12 +8,13 @@ import { getDefinitionTool, findReferencesTool, getSymbolsTool } from './navigat
 import { editFileTool } from './editor';
 import { readWebsiteTool } from './browser';
 import { semanticSearchTool } from './semantic-search';
+import { gitStatusTool, gitDiffTool, gitLogTool, gitCommitTool } from './git';
 import { ReviewManager } from '../ui/review-manager';
 import { DiffContentProvider } from '../ui/diff-provider';
 
 export class ToolRegistry {
     private tools: Map<string, Tool> = new Map();
-    private sensitiveTools = new Set(['write_file', 'edit_file', 'run_command']);
+    private sensitiveTools = new Set(['write_file', 'edit_file', 'run_command', 'git_commit']);
     private reviewManager?: ReviewManager;
 
     constructor() {
@@ -37,6 +38,10 @@ export class ToolRegistry {
         this.registerTool(editFileTool);
         this.registerTool(readWebsiteTool);
         this.registerTool(semanticSearchTool);
+        this.registerTool(gitStatusTool);
+        this.registerTool(gitDiffTool);
+        this.registerTool(gitLogTool);
+        this.registerTool(gitCommitTool);
     }
 
     registerTool(tool: Tool) {
