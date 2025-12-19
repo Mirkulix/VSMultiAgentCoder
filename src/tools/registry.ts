@@ -1,6 +1,7 @@
 import { Tool } from '../types';
 import { readFileTool, writeFileTool, listFilesTool } from './file-system';
 import { searchFilesTool } from './search';
+import { runCommandTool } from './terminal';
 
 export class ToolRegistry {
     private tools: Map<string, Tool> = new Map();
@@ -14,6 +15,7 @@ export class ToolRegistry {
         this.registerTool(writeFileTool);
         this.registerTool(listFilesTool);
         this.registerTool(searchFilesTool);
+        this.registerTool(runCommandTool);
     }
 
     registerTool(tool: Tool) {
