@@ -132,6 +132,7 @@ Gib deine Antwort als JSON zurück:
    - Review (Reviewer, Security)
    - Finalization (Docs, DevOps)
 5. **Realistisch**: 3-8 Tasks für normale Features
+6. **Robustheit**: Plane Reviews und Tests ein. Wenn ein Task fehlschlägt, versucht das System automatisch einen Fix (Auto-Fix Loop), also plane keine expliziten "If failed then fix" Tasks.
 
 ## Beispiele
 

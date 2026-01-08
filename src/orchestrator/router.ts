@@ -26,12 +26,14 @@ import { ProductManagerAgent } from '../agents/product-manager-agent';
 import { UXDesignerAgent } from '../agents/ux-designer-agent';
 import { SecurityAgent } from '../agents/security-agent';
 import { DevOpsAgent } from '../agents/devops-agent';
+import { ReviewManager } from '../ui/review-manager';
 
 export class Orchestrator {
     private agents: Map<AgentType, BaseAgent>;
     private memory: ProjectMemory;
     private llmClient: LLMClient;
     private teamConfig?: TeamConfigManager;
+    private reviewManager?: ReviewManager;
 
     constructor(llmClient: LLMClient, memory: ProjectMemory, teamConfig?: TeamConfigManager) {
         this.llmClient = llmClient;
@@ -40,6 +42,14 @@ export class Orchestrator {
         this.agents = new Map();
 
         this.initializeAgents();
+    }
+
+    setReviewManager(manager: ReviewManager) {
+        this.reviewManager = manager;
+        // Update all existing agents
+        for (const agent of this.agents.values()) {
+            agent.setReviewManager(manager);
+        }
     }
 
     private initializeAgents(): void {
@@ -79,30 +89,46 @@ export class Orchestrator {
     }
 
     private createAgentInstance(agentType: AgentType, client: LLMClient): BaseAgent {
+        let agent: BaseAgent;
         switch (agentType) {
             case 'coder':
             case 'developer':
-                return new CoderAgent(client, this.memory);
+                agent = new CoderAgent(client, this.memory);
+                break;
             case 'reviewer':
-                return new ReviewerAgent(client, this.memory);
+                agent = new ReviewerAgent(client, this.memory);
+                break;
             case 'tester':
-                return new TesterAgent(client, this.memory);
+                agent = new TesterAgent(client, this.memory);
+                break;
             case 'docs':
             case 'docsWriter':
-                return new DocsAgent(client, this.memory);
+                agent = new DocsAgent(client, this.memory);
+                break;
             case 'architect':
-                return new ArchitectAgent(client, this.memory);
+                agent = new ArchitectAgent(client, this.memory);
+                break;
             case 'productManager':
-                return new ProductManagerAgent(client, this.memory);
+                agent = new ProductManagerAgent(client, this.memory);
+                break;
             case 'uxDesigner':
-                return new UXDesignerAgent(client, this.memory);
+                agent = new UXDesignerAgent(client, this.memory);
+                break;
             case 'security':
-                return new SecurityAgent(client, this.memory);
+                agent = new SecurityAgent(client, this.memory);
+                break;
             case 'devops':
-                return new DevOpsAgent(client, this.memory);
+                agent = new DevOpsAgent(client, this.memory);
+                break;
             default:
-                return new CoderAgent(client, this.memory);
+                agent = new CoderAgent(client, this.memory);
         }
+
+        if (this.reviewManager) {
+            agent.setReviewManager(this.reviewManager);
+        }
+
+        return agent;
     }
 
     /**

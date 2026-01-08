@@ -8,19 +8,28 @@ import {
     AgentType,
     Message,
     CodeBlock,
-    LLMClient
+    LLMClient,
+    ToolCall
 } from '../types';
 import { ProjectMemory } from '../orchestrator/memory';
+import { ToolRegistry } from '../tools/registry';
+import { ReviewManager } from '../ui/review-manager';
 
 export abstract class BaseAgent {
     protected llmClient: LLMClient;
     protected memory: ProjectMemory;
     protected agentType: AgentType;
+    protected toolRegistry: ToolRegistry;
 
     constructor(llmClient: LLMClient, memory: ProjectMemory, agentType: AgentType) {
         this.llmClient = llmClient;
         this.memory = memory;
         this.agentType = agentType;
+        this.toolRegistry = new ToolRegistry();
+    }
+
+    setReviewManager(manager: ReviewManager) {
+        this.toolRegistry.setReviewManager(manager);
     }
 
     /**
@@ -34,15 +43,61 @@ export abstract class BaseAgent {
     abstract canHandle(task: Task): boolean;
 
     /**
-     * Execute a task
+     * Execute a task with tool support (ReAct loop)
      */
     async execute(task: Task): Promise<AgentResponse> {
         try {
             const messages = this.buildMessages(task);
-            const response = await this.llmClient.chat(messages, {
+            let response = await this.llmClient.chat(messages, {
                 temperature: 0.7,
                 maxTokens: 4000
             });
+
+            // ReAct Loop: Check for tool calls
+            // Max 5 turns to prevent infinite loops
+            for (let i = 0; i < 5; i++) {
+                const toolCalls = this.extractToolCalls(response);
+
+                if (toolCalls.length === 0) {
+                    break;
+                }
+
+                // Add assistant's response (with tool call) to history
+                messages.push({
+                    role: 'assistant',
+                    content: response
+                });
+
+                // Execute tools
+                const toolResults = [];
+                for (const call of toolCalls) {
+                    try {
+                        const result = await this.toolRegistry.executeTool(call.name, call.arguments);
+                        toolResults.push({
+                            id: call.id,
+                            result
+                        });
+                    } catch (err: any) {
+                        toolResults.push({
+                            id: call.id,
+                            error: err.message
+                        });
+                    }
+                }
+
+                // Create tool result message
+                const resultMessage = `Tool Results:\n${JSON.stringify(toolResults, null, 2)}\n\nBased on these results, please continue.`;
+                messages.push({
+                    role: 'user', // Simulating system feedback as user message or system message
+                    content: resultMessage
+                });
+
+                // Get next response from LLM
+                response = await this.llmClient.chat(messages, {
+                    temperature: 0.7,
+                    maxTokens: 4000
+                });
+            }
 
             const codeBlocks = this.extractCodeBlocks(response);
 
@@ -96,6 +151,24 @@ export abstract class BaseAgent {
         // Agent-specific system prompt
         parts.push(this.getSystemPrompt());
 
+        // Tool Definitions
+        parts.push(`
+## Available Tools
+You can use the following tools. To use a tool, output a JSON block like this:
+
+\`\`\`json
+{
+  "tool": "tool_name",
+  "arguments": {
+    "arg1": "value1"
+  }
+}
+\`\`\`
+
+Tools available:
+${this.toolRegistry.getToolsDescription()}
+`);
+
         // Project context
         const projectContext = this.memory.getFullContext();
         if (projectContext) {
@@ -141,13 +214,47 @@ export abstract class BaseAgent {
         let match;
 
         while ((match = regex.exec(response)) !== null) {
+            // Skip JSON blocks if they look like tool calls
+            const lang = match[1] || '';
+            const content = match[2].trim();
+            if (lang === 'json' && content.includes('"tool":')) {
+                continue;
+            }
+
             codeBlocks.push({
-                language: match[1] || 'text',
-                code: match[2].trim()
+                language: lang || 'text',
+                code: content
             });
         }
 
         return codeBlocks;
+    }
+
+    /**
+     * Extract tool calls from response
+     */
+    protected extractToolCalls(response: string): ToolCall[] {
+        const toolCalls: ToolCall[] = [];
+        // Look for JSON blocks
+        const regex = /```json\n([\s\S]*?)```/g;
+        let match;
+
+        while ((match = regex.exec(response)) !== null) {
+            try {
+                const json = JSON.parse(match[1]);
+                if (json.tool && json.arguments) {
+                    toolCalls.push({
+                        id: crypto.randomUUID(),
+                        name: json.tool,
+                        arguments: json.arguments
+                    });
+                }
+            } catch (e) {
+                // Not valid JSON or not a tool call, ignore
+            }
+        }
+
+        return toolCalls;
     }
 
     /**

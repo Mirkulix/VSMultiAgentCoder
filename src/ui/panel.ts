@@ -84,6 +84,12 @@ export class AgentPanelProvider implements vscode.WebviewViewProvider {
     private async handleChatMessage(text: string, agent?: AgentType): Promise<void> {
         if (!this._view) return;
 
+        // Slash Command Handling
+        if (text.startsWith('/')) {
+            await this.handleSlashCommand(text);
+            return;
+        }
+
         this._view.webview.postMessage({
             type: 'typing',
             agent: agent || 'orchestrator'
@@ -114,6 +120,44 @@ export class AgentPanelProvider implements vscode.WebviewViewProvider {
                 type: 'error',
                 message: String(error)
             });
+        }
+    }
+
+    private async handleSlashCommand(text: string): Promise<void> {
+        if (!this._view) return;
+        const [cmd, ...args] = text.trim().split(' ');
+        const input = args.join(' ');
+
+        switch (cmd) {
+            case '/plan':
+                vscode.commands.executeCommand('codeteam.plan', input);
+                break;
+            case '/implement':
+                vscode.commands.executeCommand('codeteam.implement', input);
+                break;
+            case '/review':
+                await this.handleReviewCode(input);
+                break;
+            case '/test':
+                await this.handleGenerateTests(input);
+                break;
+            case '/fix':
+                this._view.webview.postMessage({ type: 'typing', agent: 'developer' });
+                const context = this.getEditorContext();
+                const response = await this.orchestrator.routeToAgent('developer', `Fix this issue: ${input}`, context);
+                this.showResponse(response);
+                break;
+            case '/explain':
+                this._view.webview.postMessage({ type: 'typing', agent: 'docs' });
+                const ctx = this.getEditorContext();
+                const resp = await this.orchestrator.routeToAgent('docs', `Explain: ${input}`, ctx);
+                this.showResponse(resp);
+                break;
+            default:
+                this._view.webview.postMessage({
+                    type: 'error',
+                    message: `Unknown command: ${cmd}. Try /plan, /implement, /review, /test, /fix, /explain`
+                });
         }
     }
 

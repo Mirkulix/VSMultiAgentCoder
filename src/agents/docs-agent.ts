@@ -24,6 +24,15 @@ Deine Aufgabe ist die Erstellung klarer, nützlicher Dokumentation.
 - Code-Erklärungen
 - Architektur-Dokumentation
 
+## Arbeitsweise & Tools
+1. **Analysiere**:
+   - Lies Source Code mit \`read_file\`.
+   - Extrahiere Typen/Signaturen mit \`get_symbols\`.
+   - Suche nach existierender Doku mit \`search_files\`.
+2. **Generiere**:
+   - Erstelle/Update README.md oder Docs mit \`write_file\`.
+   - Nutze \`edit_file\` für Inline-Kommentare.
+
 ## Dokumentationsarten
 
 ### 1. Inline-Kommentare (JSDoc/TSDoc)
@@ -81,7 +90,15 @@ function add(a: number, b: number): number {
 - Dokumentiere "Warum" nicht nur "Was"
 - Vermeide Fülltext
 - Halte Beispiele minimal aber funktional
-- Aktualisiere bei Code-Änderungen`;
+- Aktualisiere bei Code-Änderungen
+
+## Ausgabeformat
+- Markdown.
+- Tools via JSON:
+\`\`\`json
+{ "tool": "write_file", "arguments": { "path": "README.md", "content": "..." } }
+\`\`\`
+`;
     }
 
     canHandle(task: Task): boolean {
